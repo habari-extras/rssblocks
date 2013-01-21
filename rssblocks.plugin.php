@@ -16,17 +16,38 @@ class RSSBlock extends Plugin
 			CronTab::add_hourly_cron('update_rrs_blocks', 'rssblocks_update');
 		}
 	}
+
+	public function filter_plugin_config( $actions )
+	{
+		$actions['update'] = _t('Update All Now');
+		return $actions;
+	}
+
+	public function action_plugin_ui( $plugin_id, $action ) {
+		switch($action) {
+			case 'update':
+				$result = $this->filter_rssblocks_update(false, true);
+				if($result) {
+					Session::notice('RSS Feeds Successfully Updated');
+				}
+				else {
+					Session::error('RSS Feeds Did Not Successfully Update');
+				}
+				break;
+		}
+	}
 	
-	public function filter_rssblocks_update($success)
+	public function filter_rssblocks_update($success, $force = false)
 	{
 		EventLog::log('Running rrsblocks update');
 
 		$blocks = DB::get_results('SELECT b.* FROM {blocks} b WHERE b.type = ?', array('rssblock'), 'Block');
 		Plugins::act('get_blocks', $blocks);
+		$success = true;
 
 		foreach($blocks as $block) {
 			$cachename = array('rssblock', md5($block->feed_url));
-			if(Cache::expired($cachename)) {
+			if($force || Cache::expired($cachename)) {
 				$r = new RemoteRequest( $block->feed_url );
 				$r->set_timeout( 10 );
 				$r->execute();
@@ -37,7 +58,9 @@ class RSSBlock extends Plugin
 						Cache::set($cachename, $feed, 3600, true);
 					}
 				}
-				catch(Exception $e) {}
+				catch(Exception $e) {
+					$success = false;
+				}
 			}
 		}
 		
@@ -88,6 +111,30 @@ class RSSBlock extends Plugin
 					break;
 				}
 			}
+
+			foreach($xml->item as $xitem) {
+				$item = new StdClass();
+
+				foreach($xitem->children() as $child) {
+					$item->{$child->getName()} = (string) $child;
+				}
+
+				foreach($dns as $ns => $nsurl) {
+					foreach($xitem->children($nsurl) as $child) {
+						$item->{$ns . '__' . $child->getName()} = (string) $child;
+						foreach($child->attributes() as $name => $value) {
+							$item->{$ns . '__' . $child->getName() . '__' . $name} = (string) $value;
+						}
+					}
+				}
+
+				$items[] = $item;
+				$itemcount++;
+				if($block->item_limit > 0 && $itemcount >= $block->item_limit) {
+					break;
+				}
+			}
+
 		}
 		catch(Exception $e) {
 		}
@@ -95,6 +142,12 @@ class RSSBlock extends Plugin
 		$block->items = $items;
 		
 		$block->markup_id = Utils::slugify($block->title);
+	}
+
+	public function action_block_form_rssblock($form, $block)
+	{
+		$form->append( 'text', 'feed_url', $block, _t( 'RSS Feed URL:', 'rssblock' ) );
+		$form->append( 'text', 'item_limit', $block, _t( 'Item Limit:', 'rssblock' ) );
 	}
 	
 	public function action_init()
