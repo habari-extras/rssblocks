@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <pluggable type="plugin">
-<name>RSS Block</name>
-<license url="http://www.apache.org/licenses/LICENSE-2.0.html">Apache Software License 2.0</license>
-<author url="http://asymptomatic.net/">Owen Winkler</author>
-<version>1.0</version>
-<url>http://redalt.com/plugins</url>
-<description><![CDATA[Links from an RSS feed as a block]]></description>
-<copyright>2009</copyright>
+	<name>RSS Block</name>
+	<license url="http://www.apache.org/licenses/LICENSE-2.0.html">Apache Software License 2.0</license>
+	<author url="http://asymptomatic.net/">Owen Winkler</author>
+	<version>1.0</version>
+	<url>http://redalt.com/plugins</url>
+	<description><![CDATA[Links from an RSS feed as a block]]></description>
+	<copyright>2009</copyright>
+	<guid>0f00934a-6cd9-46d5-922e-51d12e3d5c3f</guid>
 </pluggable>
